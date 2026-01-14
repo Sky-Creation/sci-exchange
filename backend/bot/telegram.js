@@ -3,6 +3,7 @@ import { TELEGRAM_TOKEN, TG_ADMINS } from "../config.js";
 import { getSettings, updateSettings } from "../services/settings.service.js";
 import { getOrders, updateStatus } from "../services/order.service.js";
 import { generateOTP } from "../services/otp.service.js";
+import exchangeService from '../services/exchange.service.js';
 
 let bot = null; 
 function isAdmin(id) { 
@@ -24,7 +25,7 @@ export function startBot() {
 
   bot.onText(/\/help/, msg => { 
       if (!isAdmin(msg.from.id)) return; 
-      bot.sendMessage(msg.chat.id, `🛠 *Admin Commands*\n/settings - View settings\n/setrate <MMK_to_THB> <THB_to_MMK> - Set exchange rates\n/setdiscount <percentage> - Set discount percentage\n/orders - View pending orders`, { parse_mode: "Markdown" }); 
+      bot.sendMessage(msg.chat.id, `🛠 *Admin Commands*\n/settings - View settings\n/update <CURRENCY> <BUY> <SELL> - Set exchange rates\n/setdiscount <percentage> - Set discount percentage\n/orders - View pending orders`, { parse_mode: "Markdown" }); 
   });
 
   bot.onText(/\/settings/, async msg => {
@@ -33,15 +34,16 @@ export function startBot() {
     bot.sendMessage(msg.chat.id, `📊 *Current Settings*\nMMK→THB Rate: ${settings.mmk_to_thb_rate}\nTHB→MMK Rate: ${settings.thb_to_mmk_rate}\nDiscount: ${settings.discount_percentage}%`, { parse_mode: "Markdown" });
   });
 
-  bot.onText(/\/setrate (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/, async (msg, match) => {
-    if (!isAdmin(msg.from.id)) return; 
-    const newSettings = {
-        mmk_to_thb_rate: parseFloat(match[1]),
-        thb_to_mmk_rate: parseFloat(match[2])
-    };
-    const settings = await getSettings();
-    await updateSettings({...settings, ...newSettings});
-    bot.sendMessage(msg.chat.id, `✅ *Rates Updated*\nMMK→THB: ${newSettings.mmk_to_thb_rate}\nTHB→MMK: ${newSettings.thb_to_mmk_rate}`, { parse_mode: "Markdown" });
+  bot.onText(/\/update (.+) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/, (msg, match) => {
+    if (!isAdmin(msg.from.id)) return;
+    const [currency, buy, sell] = [match[1], match[2], match[3]];
+    const success = exchangeService.updateRate(currency, buy, sell);
+    
+    if (success) {
+        bot.sendMessage(msg.chat.id, `✅ Rates for ${currency} updated.\nBuy: ${buy}\nSell: ${sell}`);
+    } else {
+        bot.sendMessage(msg.chat.id, `❌ Failed to update rates.`);
+    }
   });
 
   bot.onText(/\/setdiscount (\d+(?:\.\d+)?)/, async (msg, match) => { 

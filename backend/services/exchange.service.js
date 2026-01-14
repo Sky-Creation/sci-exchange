@@ -1,74 +1,47 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-import { RATE_EXPIRY_MINUTES } from "../config.js";
-import { getDB } from "../utils/database.js";
+// ESM-compatible way to get __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const defaultConfig = {
-    base_profit_percent: 0.2,
-    low_margin_percent: 0.2,
-    high_discount_percent: 0.1,
-    threshold_low_mmk: 50000,
-    threshold_high_mmk: 1000000,
-    threshold_low_thb: 500,
-    threshold_high_thb: 8000
-};
+const RATES_FILE = path.join(__dirname, '../data/rates.json');
 
-export const getRates = async () => {
-    const db = await getDB();
-    const rows = await new Promise((resolve, reject) => {
-        db.all("SELECT * FROM rates", [], (err, rows) => {
-            if (err) reject(err);
-            resolve(rows);
-        });
-    });
-
-    if (rows.length === 0) {
-        return { mmk_to_thb: 0, thb_to_mmk: 0, updated: null, config: defaultConfig, expired: true };
-    }
-
-    const rates = {
-        config: { ...defaultConfig }
-    };
-    let lastUpdate = null;
-
-    rows.forEach(row => {
-        if (row.name === 'mmk_to_thb' || row.name === 'thb_to_mmk') {
-            rates[row.name] = row.value;
-            if (!lastUpdate || new Date(row.updatedAt) > new Date(lastUpdate)) {
-                lastUpdate = row.updatedAt;
-            }
-        } else {
-            rates.config[row.name] = row.value;
+class ExchangeService {
+    
+    // FETCH RATES (Frontend calls this)
+    getRates() {
+        try {
+            // Read file fresh every time this function is called
+            const rawData = fs.readFileSync(RATES_FILE, 'utf8');
+            return JSON.parse(rawData);
+        } catch (err) {
+            console.error("Error reading rates file:", err);
+            return {}; // Return empty or default rates
         }
-    });
-
-    rates.updated = lastUpdate;
-    const ageMin = lastUpdate ? (Date.now() - new Date(lastUpdate).getTime()) / 60000 : Infinity;
-    rates.expired = ageMin > RATE_EXPIRY_MINUTES;
-
-    return rates;
-};
-
-export const setRates = async ({ mmk_to_thb, thb_to_mmk }) => {
-    const db = await getDB();
-    const updatedAt = new Date().toISOString();
-
-    const stmt = db.prepare("REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)");
-    stmt.run('mmk_to_thb', Number(mmk_to_thb), updatedAt);
-    stmt.run('thb_to_mmk', Number(thb_to_mmk), updatedAt);
-    stmt.finalize();
-
-    return getRates();
-};
-
-export const updateConfig = async (newConfig) => {
-    const db = await getDB();
-    const updatedAt = new Date().toISOString();
-    const stmt = db.prepare("REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)");
-
-    for (const [key, value] of Object.entries(newConfig)) {
-        stmt.run(key, value, updatedAt);
     }
-    stmt.finalize();
 
-    return getRates();
-};
+    // UPDATE RATES (Telegram Bot calls this)
+    updateRate(currency, buy, sell) {
+        try {
+            // 1. Get current rates
+            const currentRates = this.getRates();
+
+            // 2. Update memory
+            if (!currentRates[currency]) currentRates[currency] = {};
+            currentRates[currency].buy = parseFloat(buy);
+            currentRates[currency].sell = parseFloat(sell);
+
+            // 3. WRITE TO FILE immediately
+            fs.writeFileSync(RATES_FILE, JSON.stringify(currentRates, null, 2));
+            
+            return true;
+        } catch (err) {
+            console.error("Error writing rates file:", err);
+            return false;
+        }
+    }
+}
+
+export default new ExchangeService();
