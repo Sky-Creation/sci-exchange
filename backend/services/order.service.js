@@ -2,7 +2,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { getDB } from "../utils/database.js";
 import { logAudit } from "./audit.service.js";
-import { getRates } from "./exchange.service.js";
+import exchangeService from "./exchange.service.js";
 
 const generateReference = async (direction) => {
     const db = await getDB();
@@ -33,10 +33,10 @@ const generateReference = async (direction) => {
 
 export const createOrder = async (orderData) => {
     const db = await getDB();
-    const rates = await getRates();
+    const rates = exchangeService.getRates();
 
-    if (rates.expired) {
-        throw new Error("Rates have expired. Please refresh.");
+    if (Object.keys(rates).length === 0) {
+        throw new Error("Rates are not available. Please try again later.");
     }
 
     if (orderData.txid && orderData.txid.length > 4) {
