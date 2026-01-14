@@ -1,46 +1,46 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// ESM-compatible way to get __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const RATES_FILE = path.join(__dirname, '../data/rates.json');
+import { getDB } from "../utils/database.js";
 
 class ExchangeService {
-    
-    // FETCH RATES (Frontend calls this)
-    getRates() {
-        try {
-            // Read file fresh every time this function is called
-            const rawData = fs.readFileSync(RATES_FILE, 'utf8');
-            return JSON.parse(rawData);
-        } catch (err) {
-            console.error("Error reading rates file:", err);
-            return {}; // Return empty or default rates
-        }
+
+    async getRates() {
+        const db = await getDB();
+        return new Promise((resolve, reject) => {
+            db.all("SELECT name, value FROM rates", [], (err, rows) => {
+                if (err) return reject(err);
+                const rates = {};
+                rows.forEach(row => {
+                    rates[row.name] = row.value;
+                });
+                resolve(rates);
+            });
+        });
     }
 
-    // UPDATE RATES (Telegram Bot calls this)
-    updateRate(currency, buy, sell) {
-        try {
-            // 1. Get current rates
-            const currentRates = this.getRates();
+    async setRates(newRates) {
+        const db = await getDB();
+        const stmt = db.prepare("INSERT OR REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)");
+        const timestamp = new Date().toISOString();
 
-            // 2. Update memory
-            if (!currentRates[currency]) currentRates[currency] = {};
-            currentRates[currency].buy = parseFloat(buy);
-            currentRates[currency].sell = parseFloat(sell);
+        const promises = Object.entries(newRates).map(([name, value]) => {
+            // Basic validation
+            if (typeof value !== 'number' || !isFinite(value)) {
+                return Promise.reject(new Error(`Invalid value for rate ${name}: ${value}`));
+            }
+            return new Promise((resolve, reject) => {
+                stmt.run(name, value, timestamp, (err) => {
+                    if (err) reject(err);
+                    resolve();
+                });
+            });
+        });
 
-            // 3. WRITE TO FILE immediately
-            fs.writeFileSync(RATES_FILE, JSON.stringify(currentRates, null, 2));
-            
-            return true;
-        } catch (err) {
-            console.error("Error writing rates file:", err);
-            return false;
-        }
+        return Promise.all(promises).then(() => {
+            stmt.finalize();
+        }).catch(err => {
+            stmt.finalize();
+            console.error("Error setting rates:", err);
+            throw err; // Re-throw to be caught by the route handler
+        });
     }
 }
 
