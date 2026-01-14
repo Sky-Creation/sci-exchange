@@ -5,104 +5,94 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const dbPath = path.join(__dirname, "..", "data", "database.db");
 
-let db;
-let dbInitialized = false;
-let dbInitializationPromise = null;
+let dbPromise;
 
 const initializeDB = () => {
-    if (dbInitializationPromise) {
-        return dbInitializationPromise;
+    if (dbPromise) {
+        return dbPromise;
     }
 
-    dbInitializationPromise = new Promise((resolve, reject) => {
-        db = new sqlite3.Database(dbPath, (err) => {
+    dbPromise = new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(dbPath, (err) => {
             if (err) {
                 console.error("Error opening database:", err.message);
-                reject(err);
-            } else {
-                console.log("Connected to the SQLite database.");
-
-                db.serialize(() => {
-                    // Create Orders Table
-                    db.run(`CREATE TABLE IF NOT EXISTS orders (
-                        id TEXT PRIMARY KEY,
-                        reference TEXT,
-                        created TEXT,
-                        direction TEXT,
-                        amount REAL,
-                        receiveAmount REAL,
-                        rateUsed REAL,
-                        txid TEXT,
-                        slipUrl TEXT,
-                        bankName TEXT,
-                        accountNo TEXT,
-                        accountName TEXT,
-                        status TEXT,
-                        userAgent TEXT,
-                        updatedAt TEXT
-                    )`);
-
-                    // Create Rates Table
-                    db.run(`CREATE TABLE IF NOT EXISTS rates (
-                        name TEXT PRIMARY KEY,
-                        value REAL,
-                        updatedAt TEXT
-                    )`);
-
-                    // Create Archive Table
-                    db.run(`CREATE TABLE IF NOT EXISTS archive (
-                        id TEXT PRIMARY KEY,
-                        reference TEXT,
-                        created TEXT,
-                        direction TEXT,
-                        amount REAL,
-                        receiveAmount REAL,
-                        rateUsed REAL,
-                        txid TEXT,
-                        slipUrl TEXT,
-                        bankName TEXT,
-                        accountNo TEXT,
-                        accountName TEXT,
-                        status TEXT,
-                        userAgent TEXT,
-                        updatedAt TEXT
-                    )`);
-
-                    // Create Settings Table
-                    db.run(`CREATE TABLE IF NOT EXISTS settings (
-                        key TEXT PRIMARY KEY,
-                        value TEXT
-                    )`);
-
-                    // Create Audit Table
-                    db.run(`CREATE TABLE IF NOT EXISTS audit (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        action TEXT,
-                        details TEXT,
-                        timestamp TEXT
-                    )`, (err) => {
-                        if (err) {
-                            console.error("Error creating audit table:", err.message);
-                            reject(err);
-                        } else {
-                            dbInitialized = true;
-                            resolve(db);
-                        }
-                    });
-                });
+                return reject(err);
             }
+            console.log("Connected to the SQLite database.");
+            resolve(db);
         });
     });
 
-    return dbInitializationPromise;
+    return dbPromise.then(db => {
+        return Promise.all([
+            db.run(`CREATE TABLE IF NOT EXISTS orders (
+                id TEXT PRIMARY KEY,
+                reference TEXT NOT NULL,
+                created TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                amount REAL NOT NULL,
+                receiveAmount REAL NOT NULL,
+                rateUsed REAL NOT NULL,
+                txid TEXT,
+                slipUrl TEXT,
+                bankName TEXT,
+                accountNo TEXT,
+                accountName TEXT,
+                status TEXT NOT NULL,
+                userAgent TEXT,
+                updatedAt TEXT
+            )`),
+            db.run(`CREATE TABLE IF NOT EXISTS rates (
+                name TEXT PRIMARY KEY,
+                value REAL NOT NULL,
+                updatedAt TEXT NOT NULL
+            )`),
+            db.run(`CREATE TABLE IF NOT EXISTS archive (
+                id TEXT PRIMARY KEY,
+                reference TEXT NOT NULL,
+                created TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                amount REAL NOT NULL,
+                receiveAmount REAL NOT NULL,
+                rateUsed REAL NOT NULL,
+                txid TEXT,
+                slipUrl TEXT,
+                bankName TEXT,
+                accountNo TEXT,
+                accountName TEXT,
+                status TEXT NOT NULL,
+                userAgent TEXT,
+                updatedAt TEXT
+            )`),
+            db.run(`CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )`),
+            db.run(`CREATE TABLE IF NOT EXISTS audit (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action TEXT NOT NULL,
+                details TEXT,
+                timestamp TEXT NOT NULL
+            )`)
+        ]).then(() => {
+            console.log("Database schema initialized.");
+            return db;
+        });
+    });
 };
 
-export const getDB = async () => {
-    if (!dbInitialized) {
-        await initializeDB();
+// Immediately attempt to initialize
+initializeDB().catch(err => {
+    console.error("Failed to initialize database:", err);
+    process.exit(1);
+});
+
+
+export const getDB = () => {
+    if (!dbPromise) {
+        throw new Error("Database not initialized. Check server startup logs.");
     }
-    return db;
+    return dbPromise;
 };

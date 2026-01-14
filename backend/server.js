@@ -19,22 +19,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Database
-await getDB();
+getDB();
 
-// FIX: CORS Configuration for Netlify Frontend
+const allowedOrigins = ["https://sci-exchange.netlify.app"];
+if (process.env.NODE_ENV !== 'production') {
+    allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5500");
+}
+
 app.use(cors({
-    origin: [
-        "https://sci-exchange.netlify.app", // Production Frontend
-        "http://localhost:3000",            // Local Backend Dev
-        "http://127.0.0.1:5500",            // Local Frontend Dev (Live Server)
-        "http://localhost:5500"
-    ],
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
 
 app.use(express.json());
-// We still serve static files as a fallback, but primary frontend is Netlify
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Routes
@@ -42,22 +40,34 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/api", publicRoutes);
 
-// Fallback (Only useful if you visit the backend URL directly)
 app.get("*", (req, res) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/admin")) {
         return res.status(404).json({ error: "Endpoint not found" });
     }
-    res.send("SCI Exchange Backend is Running. Visit https://sci-exchange.netlify.app/ to use the app.");
+    res.send("SCI Exchange Backend is Running. Visit the frontend to use the app.");
+});
+
+// Centralized Error Handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  startBot();
+  if (process.env.NODE_ENV === 'production') {
+      startBot();
+  }
 
   // Schedule Archiving Task (Every 24 hours)
-  setInterval(() => {
-      console.log("⏰ Running daily maintenance...");
-      archiveOldOrders();
+  setInterval(async () => {
+      try {
+        console.log("⏰ Running daily maintenance...");
+        const result = await archiveOldOrders();
+        console.log(`✅ Daily maintenance complete. Archived ${result.archivedCount} orders.`);
+      } catch (error) {
+        console.error("Daily maintenance failed:", error);
+      }
   }, 24 * 60 * 60 * 1000);
   
   archiveOldOrders();

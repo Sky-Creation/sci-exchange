@@ -16,12 +16,12 @@ export const ORDERS_FILE = path.join(__dirname, "data/orders.json");
 export const ARCHIVE_FILE = path.join(__dirname, "data/archive.json");
 export const AUDIT_FILE = path.join(__dirname, "data/audit.json");
 
-export const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key_change_this";
-export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-export const ADMIN_PASSWORD = process.env.ADMIN_KEY || "admin123";
+export const JWT_SECRET = process.env.JWT_SECRET;
+export const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // Telegram
-export const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+export const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 export const TG_ADMINS = process.env.TG_ADMIN_IDS ? process.env.TG_ADMIN_IDS.split(",") : [];
 
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
@@ -29,5 +29,8 @@ export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
 
 if (process.env.NODE_ENV === 'production') {
-    if (ADMIN_PASSWORD === "admin123") console.warn("⚠️ SECURITY WARNING: Change default admin password.");
+    if (!JWT_SECRET || !ADMIN_USERNAME || !ADMIN_PASSWORD) {
+        console.error("FATAL ERROR: Missing required environment variables. Please set JWT_SECRET, ADMIN_USERNAME, and ADMIN_PASSWORD.");
+        process.exit(1);
+    }
 }
