@@ -1,105 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCIExchanger</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>SCI Exchange</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="w-full relative bg-slate-50">
-    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <a href="#home" class="font-bold text-xl text-[#1A237E]">SCIExchanger</a>
-        </div>
-    </nav>
-    <main class="z-10 relative">
-        <section class="py-12 flex items-center justify-center min-h-[80vh]">
-            <div class="w-full max-w-md md:max-w-4xl mx-auto px-4">
-                <header class="text-center mb-6">
-                    <h1 class="text-4xl font-bold text-[#1A237E]">SCI Currency Converter</h1>
-                    <p class="text-lg text-[#3F51B5] mt-2">Myanmar Kyat (MMK) & Thai Baht (THB)</p>
-                    <p id="live-clock" class="text-sm text-gray-500 mt-2 h-4"></p>
-                </header>
-                <div class="p-1 bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 rounded-2xl shadow-2xl relative mt-4 max-w-2xl mx-auto">
-                    <button id="clear-button" class="absolute -top-3 -right-3 z-20 bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">X</button>
-                    <div class="bg-white/80 backdrop-blur-sm rounded-xl p-6 md:p-8">
-                        <div class="mb-6 p-4 bg-indigo-50 rounded-lg text-center">
-                            <div class="flex items-center justify-between mb-3"><p class="text-sm font-medium text-indigo-500">Official Rates</p><button id="refresh-rate-btn">🔄</button></div>
-                            <div class="grid grid-cols-2 divide-x divide-indigo-200">
-                                <div class="px-2"><p class="text-sm text-indigo-600">MMK → THB</p><p class="text-md font-bold text-indigo-800" id="admin-rate-mmk-thb">...</p></div>
-                                <div class="px-2"><p class="text-sm text-indigo-600">THB → MMK</p><p class="text-md font-bold text-indigo-800" id="admin-rate-thb-mmk">...</p></div>
-                            </div>
-                        </div>
-                        <div class="space-y-6">
-                            <div class="flex justify-center bg-indigo-100 rounded-full p-1 w-max mx-auto">
-                                <button id="toggle-mmk-thb" class="px-6 py-2 text-sm font-semibold rounded-full bg-white text-indigo-600 shadow-sm">MMK → THB</button>
-                                <button id="toggle-thb-mmk" class="px-6 py-2 text-sm font-semibold rounded-full text-gray-500 hover:text-indigo-600">THB → MMK</button>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">You Send</label>
-                                <div class="flex items-center w-full rounded-lg border border-gray-300 bg-white shadow-sm px-3">
-                                    <span id="amount-prefix" class="font-semibold text-gray-500">MMK</span>
-                                    <input type="text" id="amount-input" inputmode="decimal" class="flex-grow py-3 px-2 bg-transparent border-none outline-none text-lg" placeholder="0">
-                                </div>
-                                <p id="adjustment-badge" class="text-xs text-green-600 mt-1 h-4 font-medium opacity-0 text-right"></p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">You Get</label>
-                                <div class="flex items-center w-full rounded-lg border border-indigo-200 bg-indigo-50 px-3">
-                                    <span id="receive-prefix" class="font-semibold text-indigo-600">THB</span>
-                                    <input type="text" id="receive-input" inputmode="decimal" class="flex-grow py-3 px-2 bg-transparent border-none outline-none text-lg font-bold text-indigo-800" placeholder="0">
-                                </div>
-                                <p id="result-text-raw" class="text-xs text-gray-400 font-mono mt-1 opacity-80 text-right">0.000</p>
-                            </div>
-                        </div>
-                        <div class="mt-6"><button id="place-order-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:scale-[1.02] transition-transform disabled:opacity-50" disabled>Place Order</button></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div id="order-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
-                <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400">X</button>
-                <h3 class="text-2xl font-bold mb-4">Confirm Order</h3>
-                <div class="space-y-4">
-                    <div class="p-4 bg-gray-50 rounded-lg text-sm">
-                        <div class="flex justify-between mb-2"><span>You Send</span><span class="font-medium" id="modal-convert-amount">-</span></div>
-                        <div class="flex justify-between mb-2"><span>Rate</span><span class="font-medium" id="modal-rate">-</span></div>
-                        <div class="flex justify-between text-lg font-bold text-indigo-700 pt-2 border-t"><span>Receive</span><span id="modal-receive-amount">-</span></div>
-                    </div>
-                    <div class="border-t pt-4">
-                        <input type="text" id="modal-bank-name" class="w-full p-2 border rounded mb-2" placeholder="Bank Name">
-                        <input type="text" id="modal-account-no" class="w-full p-2 border rounded mb-2" placeholder="Account No">
-                        <input type="text" id="modal-account-name" class="w-full p-2 border rounded" placeholder="Account Name">
-                    </div>
-                    <div class="border-t pt-4">
-                        <label class="block text-sm mb-1">Transfer Slip</label>
-                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded cursor-pointer bg-gray-50">
-                            <span class="text-sm text-gray-500">Click to upload</span>
-                            <span class="text-xs text-gray-500" id="file-name">Images Only</span>
-                            <input id="modal-slip" type="file" class="hidden" accept="image/*" />
-                        </label>
-                        <div id="qr-result-area" class="hidden mt-2 p-2 bg-indigo-50 rounded"><p class="text-xs text-green-600 font-bold">✅ QR Code Detected</p><button id="show-qr-details-btn" class="text-xs underline">Details</button><p id="qr-raw-content" class="hidden text-xs break-all bg-white p-1 border"></p></div>
-                    </div>
-                    <button id="confirm-order-btn" class="w-full bg-green-600 text-white font-bold py-3 rounded">Confirm & Send</button>
-                    <p id="modal-error" class="text-center text-red-500 text-sm hidden"></p>
-                </div>
-            </div>
-        </div>
-
-        <div id="success-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center">
-                <h3 class="text-2xl font-bold mb-2">Order Sent!</h3>
-                <p class="text-gray-600 mb-6">Success.</p>
-                <div class="bg-gray-50 p-4 rounded-lg mb-6"><p class="text-xs text-gray-500 uppercase">Ref ID</p><p class="text-xl font-mono font-bold text-indigo-600 select-all" id="success-ref">REF-...</p></div>
-                <button id="close-success-btn" class="w-full bg-gray-800 text-white font-bold py-3 rounded">Close</button>
-            </div>
-        </div>
-    </main>
-    <script src="js/main.js"></script>
+<body>
+    <div id="app"></div>
+    <script src="dist/bundle.js"></script>
 </body>
 </html>
