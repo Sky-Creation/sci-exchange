@@ -7,6 +7,7 @@ import { getOrders, updateStatus } from "../services/order.service.js";
 import { getAudit } from "../services/audit.service.js";
 import { setRates } from "../services/exchange.service.js";
 import { createBackup } from "../services/backup.service.js"; 
+import { getSettings, updateSettings } from "../services/settings.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,4 +54,23 @@ router.get("/backup/download/:filename", async (req, res) => {
     const filePath = path.join(DATA_DIR, filename);
     if (fs.existsSync(filePath)) res.download(filePath, filename); else res.status(404).json({ error: "File not found" });
 });
+
+router.get("/settings", async (req, res) => {
+    try {
+        const settings = await getSettings();
+        res.json(settings);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post("/settings", async (req, res) => {
+    try {
+        const result = await updateSettings(req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;

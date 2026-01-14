@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PORT } from "./config.js";
+import { getDB } from "./utils/database.js";
 
 // Routes
 import authRoutes from "./routes/auth.js";
@@ -16,6 +17,9 @@ import { archiveOldOrders } from "./services/order.service.js";
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Database
+await getDB();
 
 // FIX: CORS Configuration for Netlify Frontend
 app.use(cors({

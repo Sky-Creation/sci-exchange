@@ -18,11 +18,11 @@ export const AUDIT_FILE = path.join(__dirname, "data/audit.json");
 
 export const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key_change_this";
 export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+export const ADMIN_PASSWORD = process.env.ADMIN_KEY || "admin123";
 
 // Telegram
-export const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || "";
-export const TG_ADMINS = process.env.TG_ADMINS ? process.env.TG_ADMINS.split(",") : [];
+export const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+export const TG_ADMINS = process.env.TG_ADMIN_IDS ? process.env.TG_ADMIN_IDS.split(",") : [];
 
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;

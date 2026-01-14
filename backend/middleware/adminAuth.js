@@ -1,8 +1,21 @@
-import { sessions } from "../routes/auth.js";
+import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config.js";
+
 export const adminAuth = (req, res, next) => {
-  const token = (req.headers["authorization"] || "").split(" ")[1];
-  if (!token) return res.status(401).json({ error: "No token" });
-  const session = sessions.get(token);
-  if (!session || Date.now() > session.expires) { sessions.delete(token); return res.status(403).json({ error: "Invalid session" }); }
-  next();
+    const token = (req.headers["authorization"] || "").split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ error: "No token provided" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({ error: "Token expired" });
+        }
+        return res.status(401).json({ error: "Invalid token" });
+    }
 };

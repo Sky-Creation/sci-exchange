@@ -17,6 +17,7 @@
             <button onclick="showSection('charts')" id="nav-charts" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Analytics</button>
             <button onclick="showSection('audit')" id="nav-audit" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Audit</button>
             <button onclick="showSection('backup')" id="nav-backup" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Backup</button>
+            <button onclick="showSection('settings')" id="nav-settings" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Settings</button>
         </nav>
         <div class="p-4 border-t border-indigo-800"><button id="logout-btn" class="w-full px-4 py-2 border rounded bg-red-600 hover:bg-red-700 text-white">Logout</button></div>
     </aside>
@@ -55,6 +56,27 @@
         <section id="section-backup" class="hidden space-y-6">
             <h2 class="text-2xl font-bold">Backup</h2>
             <div class="bg-white p-6 rounded shadow"><p class="mb-4">Download system data.</p><button id="trigger-backup-btn" onclick="triggerBackup()" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded">Download Backup</button></div>
+        </section>
+
+        <section id="section-settings" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold">Settings</h2>
+            <div class="bg-white p-6 rounded shadow">
+                <form id="settings-form" class="space-y-4">
+                    <div>
+                        <label for="rate-mmk-thb" class="block text-sm font-medium text-gray-700">MMK to THB Rate</label>
+                        <input type="text" id="rate-mmk-thb" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="rate-thb-mmk" class="block text-sm font-medium text-gray-700">THB to MMK Rate</label>
+                        <input type="text" id="rate-thb-mmk" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="discount" class="block text-sm font-medium text-gray-700">Discount (%)</label>
+                        <input type="text" id="discount" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <button type="submit" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded">Save Settings</button>
+                </form>
+            </div>
         </section>
     </main>
     <script src="js/admin.js"></script>

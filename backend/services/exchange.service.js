@@ -1,32 +1,74 @@
-import { RATE_FILE, RATE_EXPIRY_MINUTES } from "../config.js";
-import { readJson, writeJson, initStore } from "../utils/store.js";
 
-initStore(RATE_FILE, { 
-    mmk_to_thb: 0, thb_to_mmk: 0, updated: new Date().toISOString(), 
-    config: { base_profit_percent: 0.2, low_margin_percent: 0.2, high_discount_percent: 0.1, threshold_low_mmk: 50000, threshold_high_mmk: 1000000, threshold_low_thb: 500, threshold_high_thb: 8000 }
-});
+import { RATE_EXPIRY_MINUTES } from "../config.js";
+import { getDB } from "../utils/database.js";
 
-export async function getRates() {
-  const r = await readJson(RATE_FILE);
-  if (!r.updated) return { ...r, expired: true };
-  const lastUpdate = new Date(r.updated).getTime();
-  const ageMin = (Date.now() - lastUpdate) / 60000;
-  return { ...r, expired: ageMin > RATE_EXPIRY_MINUTES };
-}
+const defaultConfig = {
+    base_profit_percent: 0.2,
+    low_margin_percent: 0.2,
+    high_discount_percent: 0.1,
+    threshold_low_mmk: 50000,
+    threshold_high_mmk: 1000000,
+    threshold_low_thb: 500,
+    threshold_high_thb: 8000
+};
 
-export async function setRates({ mmk_to_thb, thb_to_mmk }) {
-  const r = await readJson(RATE_FILE);
-  r.mmk_to_thb = Number(mmk_to_thb);
-  r.thb_to_mmk = Number(thb_to_mmk);
-  r.updated = new Date().toISOString(); 
-  await writeJson(RATE_FILE, r);
-  return r;
-}
+export const getRates = async () => {
+    const db = await getDB();
+    const rows = await new Promise((resolve, reject) => {
+        db.all("SELECT * FROM rates", [], (err, rows) => {
+            if (err) reject(err);
+            resolve(rows);
+        });
+    });
 
-export async function updateConfig(newConfig) {
-  const r = await readJson(RATE_FILE);
-  r.config = { ...r.config, ...newConfig };
-  r.updated = new Date().toISOString(); 
-  await writeJson(RATE_FILE, r);
-  return r;
-}
+    if (rows.length === 0) {
+        return { mmk_to_thb: 0, thb_to_mmk: 0, updated: null, config: defaultConfig, expired: true };
+    }
+
+    const rates = {
+        config: { ...defaultConfig }
+    };
+    let lastUpdate = null;
+
+    rows.forEach(row => {
+        if (row.name === 'mmk_to_thb' || row.name === 'thb_to_mmk') {
+            rates[row.name] = row.value;
+            if (!lastUpdate || new Date(row.updatedAt) > new Date(lastUpdate)) {
+                lastUpdate = row.updatedAt;
+            }
+        } else {
+            rates.config[row.name] = row.value;
+        }
+    });
+
+    rates.updated = lastUpdate;
+    const ageMin = lastUpdate ? (Date.now() - new Date(lastUpdate).getTime()) / 60000 : Infinity;
+    rates.expired = ageMin > RATE_EXPIRY_MINUTES;
+
+    return rates;
+};
+
+export const setRates = async ({ mmk_to_thb, thb_to_mmk }) => {
+    const db = await getDB();
+    const updatedAt = new Date().toISOString();
+
+    const stmt = db.prepare("REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)");
+    stmt.run('mmk_to_thb', Number(mmk_to_thb), updatedAt);
+    stmt.run('thb_to_mmk', Number(thb_to_mmk), updatedAt);
+    stmt.finalize();
+
+    return getRates();
+};
+
+export const updateConfig = async (newConfig) => {
+    const db = await getDB();
+    const updatedAt = new Date().toISOString();
+    const stmt = db.prepare("REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)");
+
+    for (const [key, value] of Object.entries(newConfig)) {
+        stmt.run(key, value, updatedAt);
+    }
+    stmt.finalize();
+
+    return getRates();
+};

@@ -29,13 +29,13 @@ if (window.location.pathname.includes("admin.html")) {
     document.getElementById("logout-btn")?.addEventListener("click", () => { localStorage.removeItem("admin_token"); window.location.href = "login.html"; });
 
     window.showSection = (sectionId) => {
-        ['orders', 'audit', 'backup', 'charts'].forEach(id => {
+        ['orders', 'audit', 'backup', 'charts', 'settings'].forEach(id => {
             document.getElementById(`section-${id}`)?.classList.add('hidden');
             document.getElementById(`nav-${id}`)?.classList.replace('bg-indigo-800', 'hover:bg-indigo-800');
         });
         document.getElementById(`section-${sectionId}`)?.classList.remove('hidden');
         document.getElementById(`nav-${sectionId}`)?.classList.add('bg-indigo-800');
-        if (sectionId === 'orders') fetchDashboard(); if (sectionId === 'audit') fetchAudit(); if (sectionId === 'charts') loadCharts();
+        if (sectionId === 'orders') fetchDashboard(); if (sectionId === 'audit') fetchAudit(); if (sectionId === 'charts') loadCharts(); if (sectionId === 'settings') fetchSettings();
     };
 
     async function fetchDashboard(page = 1) {
@@ -101,6 +101,57 @@ if (window.location.pathname.includes("admin.html")) {
             chartInstanceCount = new Chart(document.getElementById('chart-count'), { type: 'line', data: { labels: data.map(d=>d.date), datasets: [{ label: 'Orders', data: data.map(d=>d.count), borderColor: '#4f46e5' }] } });
         } catch {}
     }
+
+    async function fetchSettings() {
+        try {
+            const res = await fetch(`${API}/admin/settings`, { headers });
+            if (res.status === 401) { localStorage.removeItem("admin_token"); window.location.href = "login.html"; return; }
+            const settings = await res.json();
+            document.getElementById('rate-mmk-thb').value = settings.rate_mmk_thb || '';
+            document.getElementById('rate-thb-mmk').value = settings.rate_thb_mmk || '';
+            document.getElementById('discount').value = settings.discount || '';
+        } catch (err) {
+            console.error("Failed to load settings", err);
+            alert("Failed to load settings.");
+        }
+    }
+
+    const settingsForm = document.getElementById("settings-form");
+    if (settingsForm) {
+        settingsForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const button = settingsForm.querySelector("button[type='submit']");
+            button.disabled = true;
+            button.innerHTML = 'Saving...';
+
+            const newSettings = {
+                rate_mmk_thb: document.getElementById('rate-mmk-thb').value,
+                rate_thb_mmk: document.getElementById('rate-thb-mmk').value,
+                discount: document.getElementById('discount').value,
+            };
+
+            try {
+                const res = await fetch(`${API}/admin/settings`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(newSettings)
+                });
+
+                if (res.ok) {
+                    alert("Settings saved successfully!");
+                } else {
+                    const data = await res.json();
+                    throw new Error(data.error || "Failed to save settings");
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'Save Settings';
+            }
+        });
+    }
+
     fetchDashboard();
     setInterval(() => { if (!document.getElementById("section-orders").classList.contains("hidden")) fetchDashboard(currentPage); }, 30000);
 }
