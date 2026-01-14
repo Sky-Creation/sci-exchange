@@ -1,7 +1,7 @@
-const fs = require('fs');
-const Jimp = require('jimp');
-const jsQR = require('jsqr');
-const crc = require('node-crc');
+import fs from 'fs';
+import Jimp from 'jimp';
+import jsQR from 'jsqr';
+import crc from 'node-crc';
 
 class SlipService {
     
@@ -90,4 +90,4 @@ class SlipService {
     }
 }
 
-module.exports = new SlipService();
+export default new SlipService();
