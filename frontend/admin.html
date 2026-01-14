@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+    <aside class="w-64 bg-indigo-900 text-white flex flex-col shadow-xl">
+        <div class="h-16 flex items-center justify-center border-b border-indigo-800"><h1 class="text-xl font-bold">SCI ADMIN</h1></div>
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <button onclick="showSection('orders')" id="nav-orders" class="w-full flex items-center px-4 py-3 rounded-lg bg-indigo-800 text-white">Orders</button>
+            <button onclick="showSection('charts')" id="nav-charts" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Analytics</button>
+            <button onclick="showSection('audit')" id="nav-audit" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Audit</button>
+            <button onclick="showSection('backup')" id="nav-backup" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-800 text-indigo-100">Backup</button>
+        </nav>
+        <div class="p-4 border-t border-indigo-800"><button id="logout-btn" class="w-full px-4 py-2 border rounded bg-red-600 hover:bg-red-700 text-white">Logout</button></div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-8 relative">
+        <section id="section-orders" class="space-y-6">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <h2 class="text-2xl font-bold">Orders</h2>
+                <div class="flex gap-2">
+                    <button onclick="downloadCSV()" class="bg-green-600 text-white px-3 py-2 rounded">Export CSV</button>
+                    <input type="text" id="order-search" placeholder="Search..." class="px-4 py-2 border rounded outline-none w-64" onkeyup="filterOrders()">
+                    <button onclick="fetchDashboard()" class="text-indigo-600 bg-white px-3 py-2 rounded border">Refresh</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow border overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">TXID</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+                    <tbody id="orders-table-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="section-charts" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold">Analytics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded shadow"><canvas id="chart-volume"></canvas></div>
+                <div class="bg-white p-6 rounded shadow"><canvas id="chart-count"></canvas></div>
+            </div>
+        </section>
+
+        <section id="section-audit" class="hidden space-y-6">
+            <div class="flex justify-between"><h2 class="text-2xl font-bold">Audit Log</h2><button onclick="fetchAudit()" class="text-indigo-600">Refresh</button></div>
+            <div class="bg-white rounded shadow overflow-hidden"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Target</th></tr></thead><tbody id="audit-table-body" class="bg-white divide-y text-sm"></tbody></table></div>
+        </section>
+
+        <section id="section-backup" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold">Backup</h2>
+            <div class="bg-white p-6 rounded shadow"><p class="mb-4">Download system data.</p><button id="trigger-backup-btn" onclick="triggerBackup()" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded">Download Backup</button></div>
+        </section>
+    </main>
+    <script src="js/admin.js"></script>
+</body>
+</html>
