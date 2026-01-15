@@ -84,9 +84,10 @@ const loadRates = async (isAutoRefresh = false) => {
 
     const data = await apiService.fetchRates();
     if (data) {
+        const config = state.rates.config;
         state.rates = {
-            ...state.rates,
-            ...data
+            ...data,
+            config
         };
         if (state.rates.expired) {
             handleExpiredRates();

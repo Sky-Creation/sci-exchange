@@ -9,6 +9,7 @@ import { getDB } from "./utils/database.js";
 import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
 import publicRoutes from "./routes/public.js";
+import { adminAuth } from "./middleware/adminAuth.js";
 
 // Services
 import { startBot } from "./bot/telegram.js";
@@ -37,7 +38,7 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Routes
 app.use("/auth", authRoutes);
-app.use("/admin", adminRoutes);
+app.use("/admin", adminAuth, adminRoutes);
 app.use("/api", publicRoutes);
 
 app.get("*", (req, res) => {
