@@ -25,13 +25,14 @@
                 <div class="p-1 bg-gradient-to-br from-indigo-200 via-purple-200 to-pink-200 rounded-2xl shadow-2xl relative mt-4 max-w-2xl mx-auto">
                     <button id="clear-button" class="absolute -top-3 -right-3 z-20 bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">X</button>
                     <div class="bg-white/80 backdrop-blur-sm rounded-xl p-6 md:p-8">
-                        <div class="mb-6 p-4 bg-indigo-50 rounded-lg text-center">
+                        <div id="rate-info" class="mb-6 p-4 bg-indigo-50 rounded-lg text-center">
                             <div class="flex items-center justify-between mb-3"><p class="text-sm font-medium text-indigo-500">Official Rates</p><button id="refresh-rate-btn">🔄</button></div>
                             <div class="grid grid-cols-2 divide-x divide-indigo-200">
                                 <div class="px-2"><p class="text-sm text-indigo-600">MMK → THB</p><p class="text-md font-bold text-indigo-800" id="admin-rate-mmk-thb">...</p></div>
                                 <div class="px-2"><p class="text-sm text-indigo-600">THB → MMK</p><p class="text-md font-bold text-indigo-800" id="admin-rate-thb-mmk">...</p></div>
                             </div>
                         </div>
+                        <p id="error-banner" class="text-red-500 text-sm hidden mb-4"></p>
                         <div class="space-y-6">
                             <div class="flex justify-center bg-indigo-100 rounded-full p-1 w-max mx-auto">
                                 <button id="toggle-mmk-thb" class="px-6 py-2 text-sm font-semibold rounded-full bg-white text-indigo-600 shadow-sm">MMK → THB</button>

@@ -93,6 +93,7 @@ const setUIState = (uiState) => {
             errorBanner.textContent = "Rates have expired. Please refresh.";
             errorBanner.classList.remove('hidden');
             rateInfo.classList.add('hidden');
+            updateStaticRatesUI();
             break;
         case 'error':
             errorBanner.textContent = "Rates are currently unavailable. Please try again later.";
