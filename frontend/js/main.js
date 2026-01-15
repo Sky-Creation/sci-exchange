@@ -28,116 +28,6 @@ const state = {
 
 const els = {};
 
-const App = () => {
-    return `
-    <div class="container mx-auto p-4 max-w-lg bg-white rounded-lg shadow-lg">
-        <header class="flex justify-between items-center mb-4">
-            <h1 class="text-2xl font-bold text-indigo-600">SCI Exchange</h1>
-            <div id="live-clock" class="text-sm font-medium text-gray-600"></div>
-        </header>
-
-        <div class="grid grid-cols-2 gap-4 mb-4 text-center">
-            <div>
-                <p class="text-sm text-gray-500">MMK to THB</p>
-                <p id="admin-rate-mmk-thb" class="text-xl font-bold">0</p>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500">THB to MMK</p>
-                <p id="admin-rate-thb-mmk" class="text-xl font-bold">0</p>
-            </div>
-        </div>
-
-        <div class="relative mb-4">
-            <div class="flex rounded-md shadow-sm">
-                <button id="toggle-mmk-thb" class="flex-1 rounded-l-md px-4 py-2 bg-white text-indigo-600 shadow-sm">MMK to THB</button>
-                <button id="toggle-thb-mmk" class="flex-1 rounded-r-md px-4 py-2 text-gray-500 hover:text-indigo-600">THB to MMK</button>
-            </div>
-        </div>
-
-        <div class="space-y-4">
-            <div class="relative">
-                <label for="amount-input" class="text-sm font-medium text-gray-700">You Send</label>
-                <div class="flex items-center">
-                    <input type="text" id="amount-input" class="w-full p-2 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="0">
-                    <span id="amount-prefix" class="ml-2 font-medium text-gray-500">MMK</span>
-                </div>
-            </div>
-            <div class="relative">
-                <label for="receive-input" class="text-sm font-medium text-gray-700">They Receive</label>
-                <div class="flex items-center">
-                    <input type="text" id="receive-input" class="w-full p-2 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="0">
-                    <span id="receive-prefix" class="ml-2 font-medium text-gray-500">THB</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex justify-between items-center mt-4">
-            <div id="result-text-raw" class="text-sm text-gray-600">Rate: 0.000</div>
-            <div id="adjustment-badge" class="text-xs mt-2 h-4 font-medium transition-opacity text-right opacity-0"></div>
-        </div>
-        
-        <div class="flex items-center justify-between mt-6">
-            <button id="refresh-rate-btn" class="p-2 text-gray-500 hover:text-indigo-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16"></path></svg>
-            </button>
-            <button id="clear-button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Clear</button>
-            <button id="place-order-btn" class="px-6 py-2 text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-700 disabled:bg-gray-400" disabled>Place Order</button>
-        </div>
-
-        <div id="order-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3 text-center">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Order</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-500">You are converting <strong id="modal-convert-amount"></strong></p>
-                        <p class="text-sm text-gray-500">at a rate of <strong id="modal-rate"></strong></p>
-                        <p class="text-lg font-bold text-indigo-600">They will receive <strong id="modal-receive-amount"></strong></p>
-                    </div>
-                    <div class="space-y-4 text-left">
-                        <input type="text" id="modal-bank-name" placeholder="Bank Name" class="w-full p-2 border-gray-300 rounded-md">
-                        <input type="text" id="modal-account-no" placeholder="Account Number" class="w-full p-2 border-gray-300 rounded-md">
-                        <input type="text" id="modal-account-name" placeholder="Account Name" class="w-full p-2 border-gray-300 rounded-md">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Upload Slip</label>
-                            <input type="file" id="modal-slip" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
-                            <p id="file-name" class="text-xs text-gray-500 mt-1">PNG, JPG (MAX. 5MB)</p>
-                            <div id="qr-result-area" class="hidden mt-2 text-xs text-gray-600">
-                                <p>QR Code Detected. <button id="show-qr-details-btn" class="text-indigo-500">Details</button></p>
-                                <pre id="qr-raw-content" class="hidden mt-1 p-2 bg-gray-100 rounded"></pre>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="modal-error" class="hidden mt-2 text-sm text-red-600"></div>
-                    <div class="items-center px-4 py-3">
-                        <button id="close-modal-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2">Cancel</button>
-                        <button id="confirm-order-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Confirm & Send</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="success-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3 text-center">
-                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Order Placed!</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-500">Your order has been placed successfully. Your reference is <strong id="success-ref"></strong>.</p>
-                    </div>
-                    <div class="items-center px-4 py-3">
-                        <button id="close-success-btn" class="px-4 py-2 bg-green-500 text-white rounded-md">Done</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    `;
-};
-
 const cacheDom = () => {
     const allElements = document.querySelectorAll("*[id]");
     allElements.forEach(el => {
@@ -188,7 +78,7 @@ const apiService = {
 };
 
 const loadRates = async (isAutoRefresh = false) => {
-    if (!isAutoRefresh) {
+    if (!isAutoRefresh && els.refreshRateBtn) {
         els.refreshRateBtn.classList.add("animate-spin");
     }
 
@@ -202,7 +92,7 @@ const loadRates = async (isAutoRefresh = false) => {
         updateRatesUI();
     }
 
-    if (!isAutoRefresh) {
+    if (!isAutoRefresh && els.refreshRateBtn) {
         els.refreshRateBtn.classList.remove("animate-spin");
     }
 };
@@ -220,6 +110,7 @@ const handleExpiredRates = () => {
 };
 
 const updateRatesUI = () => {
+    if (!els.placeOrderBtn) return;
     els.placeOrderBtn.textContent = "Place Order";
     els.amountInput.disabled = false;
     els.receiveInput.disabled = false;
@@ -241,8 +132,12 @@ const updateRatesUI = () => {
     state.rates.effective_mmk_thb = Math.round(state.rates.mmk_to_thb * (1 - baseProfit));
     state.rates.effective_thb_mmk = Math.round(state.rates.thb_to_mmk * (1 + baseProfit));
     
-    els.adminRateMmkThb.textContent = state.rates.effective_mmk_thb.toLocaleString();
-    els.adminRateThbMmk.textContent = state.rates.effective_thb_mmk.toLocaleString();
+    if (els.adminRateMmkThb) {
+      els.adminRateMmkThb.textContent = state.rates.effective_mmk_thb.toLocaleString();
+    }
+    if (els.adminRateThbMmk) {
+      els.adminRateThbMmk.textContent = state.rates.effective_thb_mmk.toLocaleString();
+    }
 };
 
 
@@ -341,22 +236,22 @@ const showRateInfo = (finalRate, rateLabel) => {
 const setDirection = (dir) => {
     if (state.rates.expired) return;
     state.rates.currentDirection = dir;
-    const { btnMmkThb, btnThbMmk, amountPrefix, receivePrefix } = els;
+    const { toggleMmkThb, toggleThbMmk, amountPrefix, receivePrefix } = els;
     const activeClass = ["bg-white", "text-indigo-600", "shadow-sm"];
     const inactiveClass = ["text-gray-500", "hover:text-indigo-600"];
 
     if (dir === "MMK2THB") {
-        btnMmkThb.classList.add(...activeClass);
-        btnMmkThb.classList.remove(...inactiveClass);
-        btnThbMmk.classList.remove(...activeClass);
-        btnThbMmk.classList.add(...inactiveClass);
+        toggleMmkThb.classList.add(...activeClass);
+        toggleMmkThb.classList.remove(...inactiveClass);
+        toggleThbMmk.classList.remove(...activeClass);
+        toggleThbMmk.classList.add(...inactiveClass);
         amountPrefix.textContent = "MMK";
         receivePrefix.textContent = "THB";
     } else {
-        btnThbMmk.classList.add(...activeClass);
-        btnThbMmk.classList.remove(...inactiveClass);
-        btnMmkThb.classList.remove(...activeClass);
-        btnMmkThb.classList.add(...inactiveClass);
+        toggleThbMmk.classList.add(...activeClass);
+        toggleThbMmk.classList.remove(...inactiveClass);
+        toggleMmkThb.classList.remove(...activeClass);
+        toggleMmkThb.classList.add(...inactiveClass);
         amountPrefix.textContent = "THB";
         receivePrefix.textContent = "MMK";
     }
@@ -482,7 +377,7 @@ const resetModalState = () => {
     els.modalAccountNo.value = "";
     els.modalAccountName.value = "";
     els.modalSlip.value = "";
-    els.fileName.textContent = "PNG, JPG (MAX. 5MB)";
+    els.fileName.textContent = "Images Only";
     els.modalError.classList.add("hidden");
     els.qrResultArea.classList.add("hidden");
     els.qrRawContent.textContent = "";
@@ -491,8 +386,10 @@ const resetModalState = () => {
 };
 
 const showError = (msg) => {
-    els.modalError.textContent = msg;
-    els.modalError.classList.remove("hidden");
+    if (els.modalError) {
+        els.modalError.textContent = msg;
+        els.modalError.classList.remove("hidden");
+    }
 };
 
 
@@ -531,8 +428,8 @@ const bindEvents = () => {
     els.receiveInput.addEventListener("input", handleInputActivity);
     els.modalAccountNo.addEventListener("input", (e) => e.target.value = e.target.value.replace(/[^0-9]/g, ''));
     
-    els.btnMmkThb.addEventListener("click", () => setDirection("MMK2THB"));
-    els.btnThbMmk.addEventListener("click", () => setDirection("THB2MMK"));
+    els.toggleMmkThb.addEventListener("click", () => setDirection("MMK2THB"));
+    els.toggleThbMmk.addEventListener("click", () => setDirection("THB2MMK"));
 
     els.refreshRateBtn.addEventListener("click", () => loadRates(false));
     els.clearButton.addEventListener("click", resetCalculation);
@@ -552,16 +449,17 @@ const bindEvents = () => {
     });
 
     setInterval(() => {
-        els.liveClock.textContent = new Date().toLocaleTimeString();
+        if (els.liveClock) {
+            els.liveClock.textContent = new Date().toLocaleTimeString();
+        }
     }, 1000);
 };
 
 const init = () => {
-    document.getElementById("app").innerHTML = App();
     cacheDom();
     bindEvents();
     loadRates();
     updateRefreshRate();
 };
 
-init();
+document.addEventListener('DOMContentLoaded', init);
