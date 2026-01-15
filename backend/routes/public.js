@@ -16,17 +16,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Use memory storage to get file buffer
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-router.get("/rates", (req, res) => {
+router.get("/rates", async (req, res) => { // CORRECT: Make the handler async
   try {
-    // getRates is now a synchronous function
-    const rates = exchangeService.getRates();
+    const rates = await exchangeService.getRates(); // CORRECT: Await the async function
     res.json(rates);
   } catch (err) { 
     console.error("GET /rates Error:", err);
-    // Send a structured error response that the frontend can use
     res.status(500).json({ error: "Service Unavailable", expired: true }); 
   }
 });
@@ -34,25 +31,20 @@ router.get("/rates", (req, res) => {
 router.post("/calculate", async (req, res, next) => {
     try {
         const { direction, amount } = req.body;
-        
-        // Server-side validation
         if (!direction || !amount || typeof amount !== 'number' || amount <= 0) {
             return res.status(400).json({ message: "Invalid direction or amount" });
         }
-
         const result = await rateService.calculate(direction, amount);
         res.json(result);
     } catch (err) {
-        // Pass errors to the centralized error handler
         next(err);
     }
 });
 
 router.post("/orders", upload.single("slip"), validateOrder, async (req, res) => {
   try {
-    const rates = exchangeService.getRates();
+    const rates = await exchangeService.getRates(); // CORRECT: Await the async function
     
-    // CRITICAL FIX: Check the expired flag before allowing an order
     if (rates.expired) {
         return res.status(403).json({ error: "Rates have expired. Please refresh and try again." });
     }
@@ -73,10 +65,8 @@ router.post("/orders", upload.single("slip"), validateOrder, async (req, res) =>
 
     orderData.qrCode = verification.data.raw;
 
-    // Note: Cloudinary upload logic can be added here if needed
-
     const newOrder = await createOrder(orderData);
-    notifyNewOrder(newOrder).catch(console.error); // Send notification without holding up the response
+    notifyNewOrder(newOrder).catch(console.error); 
     res.status(201).json(newOrder);
 
   } catch (err) { 

@@ -29,15 +29,15 @@ router.post("/orders/:id", async (req, res, next) => {
   try {
     const o = await updateStatus(req.params.id, req.body.status);
     if (!o) return res.status(404).json({ error: "Not found" });
-    logAudit(`Order status updated: ${req.params.id}`, `Status changed to ${req.body.status}`);
+    await logAudit(`Order status updated: ${req.params.id}`, `Status changed to ${req.body.status}`);
     res.json(o);
   } catch (err) { next(err); }
 });
 
-router.post("/rates", (req, res, next) => {
+router.post("/rates", async (req, res, next) => {
   try {
-    exchangeService.setRates(req.body);
-    logAudit("Exchange rates updated", JSON.stringify(req.body));
+    await exchangeService.setRates(req.body);
+    await logAudit("Exchange rates updated", JSON.stringify(req.body));
     res.json({ message: "Rates updated successfully" });
   } catch (err) { next(err); }
 });
@@ -52,10 +52,10 @@ router.get("/audit", async (req, res, next) => {
 router.post("/backup", async (req, res, next) => {
   try {
     const result = await createBackup();
-    logAudit("Backup created", `File: ${result.file}`);
+    await logAudit("Backup created", `File: ${result.file}`);
     res.json({ ...result, directUrl: `${req.protocol}://${req.get('host')}/admin/backup/download/${result.file}` });
   } catch (err) { 
-    logAudit("Backup failed", err.message);
+    await logAudit("Backup failed", err.message);
     next(err); 
   }
 });
@@ -85,7 +85,7 @@ router.get("/settings", async (req, res, next) => {
 router.post("/settings", async (req, res, next) => {
     try {
         const result = await updateSettings(req.body);
-        logAudit("Settings updated", JSON.stringify(req.body));
+        await logAudit("Settings updated", JSON.stringify(req.body));
         res.json(result);
     } catch (err) {
         next(err);

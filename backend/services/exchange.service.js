@@ -1,69 +1,87 @@
 import { getDB } from "../utils/database.js";
 import { RATE_EXPIRY_MINUTES } from "../config.js";
 
+// A helper to promisify the callback-based sqlite3 API
+const dbRun = (db, sql, params) => 
+    new Promise((resolve, reject) => {
+        db.run(sql, params, function(err) {
+            if (err) return reject(err);
+            resolve(this);
+        });
+    });
+
+const dbAll = (db, sql, params) => 
+    new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows);
+        });
+    });
+
 class ExchangeService {
 
-    getRates() {
-        const db = getDB(); // Assuming getDB provides a synchronous connection from a pool
-        const rates = { expired: true }; // Default to expired
+    async getRates() {
+        const db = await getDB();
 
         try {
-            // This is a simplified example. In a real app, you might use a more robust data loading method.
-            // For this specific case, we assume the rates are in memory or a simple file, not from a complex async source.
-            const rateData = db.prepare("SELECT name, value, updatedAt FROM rates").all();
+            const rateRows = await dbAll(db, "SELECT name, value, updatedAt FROM rates", []);
             
-            if (!rateData.length) {
+            if (!rateRows || rateRows.length === 0) {
                 console.log("No rates found in the database.");
-                return rates; // Returns { expired: true }
+                return { expired: true };
             }
 
-            const lastUpdated = new Date(rateData[0].updatedAt);
+            const rates = { expired: true };
+            const lastUpdated = new Date(rateRows[0].updatedAt);
             const now = new Date();
             const minutesDiff = (now.getTime() - lastUpdated.getTime()) / 60000;
             
-            if (minutesDiff > RATE_EXPIRY_MINUTES) {
-                console.log(`Rates have expired. Last update was ${minutesDiff.toFixed(2)} minutes ago.`);
-                rates.expired = true;
-            } else {
+            if (minutesDiff <= RATE_EXPIRY_MINUTES) {
                 rates.expired = false;
+            } else {
+                 console.log(`Rates expired. Last update: ${minutesDiff.toFixed(2)} mins ago.`);
             }
 
-            rateData.forEach(row => {
+            rateRows.forEach(row => {
                 rates[row.name] = row.value;
             });
-
+            
             return rates;
 
         } catch (err) {
-            console.error("Error getting rates from DB:", err);
-            return { expired: true, error: "Failed to retrieve rates." }; // Ensure it's always considered expired on error
+            console.error("Error in getRates:", err);
+            return { expired: true, error: "Failed to retrieve rates from the database." };
         }
     }
 
     async setRates(newRates) {
         const db = await getDB();
-        const stmt = db.prepare("INSERT OR REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)");
         const timestamp = new Date().toISOString();
 
-        const promises = Object.entries(newRates).map(([name, value]) => {
-            if (typeof value !== 'number' || !isFinite(value)) {
-                return Promise.reject(new Error(`Invalid value for rate ${name}: ${value}`));
-            }
-            return new Promise((resolve, reject) => {
-                stmt.run(name, value, timestamp, (err) => {
-                    if (err) reject(err);
-                    resolve();
-                });
-            });
-        });
+        try {
+            // Use a transaction for atomicity
+            await dbRun(db, "BEGIN TRANSACTION");
 
-        return Promise.all(promises).then(() => {
-            stmt.finalize();
-        }).catch(err => {
-            stmt.finalize();
-            console.error("Error setting rates:", err);
-            throw err; 
-        });
+            for (const [name, value] of Object.entries(newRates)) {
+                if (typeof value !== 'number' || !isFinite(value)) {
+                    throw new Error(`Invalid value for rate ${name}: ${value}`);
+                }
+                const sql = `INSERT OR REPLACE INTO rates (name, value, updatedAt) VALUES (?, ?, ?)`;
+                await dbRun(db, sql, [name, value, timestamp]);
+            }
+
+            await dbRun(db, "COMMIT");
+            console.log("Rates successfully updated in the database.");
+
+        } catch (err) {
+            console.error("Error in setRates, rolling back transaction:", err);
+            try {
+                await dbRun(db, "ROLLBACK");
+            } catch (rollbackErr) {
+                console.error("Fatal: Could not rollback transaction:", rollbackErr);
+            }
+            throw err; // Re-throw to be caught by the calling function (e.g., in telegram bot)
+        }
     }
 }
 
