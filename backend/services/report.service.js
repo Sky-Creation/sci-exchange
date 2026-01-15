@@ -1,7 +1,18 @@
-import { ORDERS_FILE } from "../config.js";
-import { readJson } from "../utils/store.js";
+import { getDB } from "../utils/database.js";
 
-async function getOrders() { return await readJson(ORDERS_FILE); }
+// Promisified helpers for the sqlite3 library
+const dbAll = (db, sql, params) => 
+    new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows);
+        });
+    });
+
+async function getOrders() { 
+    const db = await getDB();
+    return await dbAll(db, "SELECT * FROM orders", []);
+}
 
 export async function dailyReport(date = new Date()) {
   const orders = await getOrders();
@@ -27,7 +38,7 @@ export async function monthlyReport(year, month) {
 
 export async function exportCSV() {
   const orders = await getOrders();
-  const headers = ["id", "created", "direction", "amount", "receive", "txid", "status", "slipUrl"];
+  const headers = ["id", "reference", "created", "direction", "amount", "receiveAmount", "rateUsed", "txid", "slipUrl", "bankName", "accountNo", "accountName", "status", "userAgent", "updatedAt"];
   const rows = orders.map(o => headers.map(h => `"${(o[h] || "").toString().replace(/"/g, '""')}"`).join(","));
   return [headers.join(","), ...rows].join("\n");
 }

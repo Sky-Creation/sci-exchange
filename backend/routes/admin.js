@@ -8,6 +8,7 @@ import { getAudit, logAudit } from "../services/audit.service.js";
 import exchangeService from "../services/exchange.service.js";
 import { createBackup } from "../services/backup.service.js"; 
 import { getSettings, updateSettings } from "../services/settings.service.js";
+import { exportCSV } from "../services/report.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -87,6 +88,17 @@ router.post("/settings", async (req, res, next) => {
         const result = await updateSettings(req.body);
         await logAudit("Settings updated", JSON.stringify(req.body));
         res.json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get("/export/csv", async (req, res, next) => {
+    try {
+        const csv = await exportCSV();
+        res.header('Content-Type', 'text/csv');
+        res.attachment('orders.csv');
+        res.send(csv);
     } catch (err) {
         next(err);
     }

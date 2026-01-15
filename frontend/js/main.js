@@ -55,7 +55,17 @@ const apiService = {
         }
         return await response.json();
     },
-    // placeOrder logic remains unchanged
+    placeOrder: async (formData) => {
+        const response = await fetch(`${API_URL}/orders`, {
+            method: 'POST',
+            body: formData
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || "Order submission failed");
+        }
+        return await response.json();
+    }
 };
 
 const setUIState = (uiState) => {
@@ -258,6 +268,102 @@ const showRateInfo = (finalRate, rateLabel) => {
     els.adjustmentBadge.classList.remove("opacity-0");
 }
 
+const openOrderModal = () => {
+    if (!state.order.currentOrderData) return;
+    const data = state.order.currentOrderData;
+    els.modalConvertAmount.textContent = `${formatNumber(data.amount)} ${data.direction === "MMK2THB" ? "MMK" : "THB"}`;
+    els.modalRate.textContent = data.rateText;
+    els.modalReceiveAmount.textContent = data.receiveText;
+    els.orderModal.classList.remove('hidden');
+};
+
+const closeOrderModal = () => {
+    els.orderModal.classList.add('hidden');
+    resetModal();
+};
+
+const resetModal = () => {
+    els.modalBankName.value = '';
+    els.modalAccountNo.value = '';
+    els.modalAccountName.value = '';
+    els.modalSlip.value = '';
+    els.fileName.textContent = 'Images Only';
+    els.qrResultArea.classList.add('hidden');
+    els.modalError.classList.add('hidden');
+};
+
+const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    els.fileName.textContent = file.name;
+    // QR Detection
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+                els.qrResultArea.classList.remove('hidden');
+                els.qrRawContent.textContent = code.data;
+            } else {
+                els.qrResultArea.classList.add('hidden');
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+const showQRDetails = () => {
+    els.qrRawContent.classList.toggle('hidden');
+};
+
+const confirmOrder = async () => {
+    const bankName = els.modalBankName.value.trim();
+    const accountNo = els.modalAccountNo.value.trim();
+    const accountName = els.modalAccountName.value.trim();
+    const slip = els.modalSlip.files[0];
+
+    if (!bankName || !accountNo || !accountName || !slip) {
+        els.modalError.textContent = 'All fields are required.';
+        els.modalError.classList.remove('hidden');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('direction', state.order.currentOrderData.direction);
+    formData.append('amount', state.order.currentOrderData.amount);
+    formData.append('bankName', bankName);
+    formData.append('accountNo', accountNo);
+    formData.append('accountName', accountName);
+    formData.append('slip', slip);
+
+    try {
+        const result = await apiService.placeOrder(formData);
+        closeOrderModal();
+        showSuccessModal(result.reference);
+    } catch (error) {
+        els.modalError.textContent = error.message;
+        els.modalError.classList.remove('hidden');
+    }
+};
+
+const showSuccessModal = (ref) => {
+    els.successRef.textContent = ref;
+    els.successModal.classList.remove('hidden');
+};
+
+const closeSuccessModal = () => {
+    els.successModal.classList.add('hidden');
+    resetCalculation();
+};
+
 const init = () => {
     cacheDom();
     setDirection('MMK2THB');
@@ -268,8 +374,13 @@ const init = () => {
     els.toggleMmkThb.addEventListener("click", () => setDirection("MMK2THB"));
     els.toggleThbMmk.addEventListener("click", () => setDirection("THB2MMK"));
     els.refreshRateBtn.addEventListener("click", () => loadInitialRates(false));
-    
-    // Assume other listeners for modal etc. are set up here
+    els.placeOrderBtn.addEventListener("click", openOrderModal);
+    els.closeModalBtn.addEventListener("click", closeOrderModal);
+    els.confirmOrderBtn.addEventListener("click", confirmOrder);
+    els.closeSuccessBtn.addEventListener("click", closeSuccessModal);
+    els.modalSlip.addEventListener("change", handleFileUpload);
+    els.showQrDetailsBtn.addEventListener("click", showQRDetails);
+    els.clearButton.addEventListener("click", () => { resetCalculation(); setDirection('MMK2THB'); });
 };
 
 document.addEventListener('DOMContentLoaded', init);
