@@ -21,18 +21,29 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 
 router.get("/rates", (req, res) => {
   try {
-    const rates = exchangeService.getRates(); // Now a sync call
-    if (!rates) throw new Error("Rates service returned null");
+    // getRates is now a synchronous function
+    const rates = exchangeService.getRates();
     res.json(rates);
-  } catch (err) { console.error("GET /rates Error:", err); res.status(500).json({ error: "Service Unavailable" }); }
+  } catch (err) { 
+    console.error("GET /rates Error:", err);
+    // Send a structured error response that the frontend can use
+    res.status(500).json({ error: "Service Unavailable", expired: true }); 
+  }
 });
 
 router.post("/calculate", async (req, res, next) => {
     try {
         const { direction, amount } = req.body;
-        const result = await rateService.calculate(direction, parseFloat(amount));
+        
+        // Server-side validation
+        if (!direction || !amount || typeof amount !== 'number' || amount <= 0) {
+            return res.status(400).json({ message: "Invalid direction or amount" });
+        }
+
+        const result = await rateService.calculate(direction, amount);
         res.json(result);
     } catch (err) {
+        // Pass errors to the centralized error handler
         next(err);
     }
 });
@@ -40,9 +51,10 @@ router.post("/calculate", async (req, res, next) => {
 router.post("/orders", upload.single("slip"), validateOrder, async (req, res) => {
   try {
     const rates = exchangeService.getRates();
-    // Simple check if rates are loaded
-    if (Object.keys(rates).length === 0) {
-        return res.status(403).json({ error: "Rates are not available." });
+    
+    // CRITICAL FIX: Check the expired flag before allowing an order
+    if (rates.expired) {
+        return res.status(403).json({ error: "Rates have expired. Please refresh and try again." });
     }
     
     const orderData = req.body;
@@ -59,19 +71,17 @@ router.post("/orders", upload.single("slip"), validateOrder, async (req, res) =>
         return res.status(400).json({ error: verification.message });
     }
 
-    // The raw QR data from the verified slip
     orderData.qrCode = verification.data.raw;
 
-    // TODO: Manually upload req.file.buffer to Cloudinary if needed and set slipUrl
-    // For now, we are just verifying and not storing the slip image itself
+    // Note: Cloudinary upload logic can be added here if needed
 
     const newOrder = await createOrder(orderData);
-    notifyNewOrder(newOrder).catch(console.error);
+    notifyNewOrder(newOrder).catch(console.error); // Send notification without holding up the response
     res.status(201).json(newOrder);
 
   } catch (err) { 
-      console.error("Order Error:", err); 
-      res.status(500).json({ error: "Failed to process order" }); 
+      console.error("Order Submission Error:", err); 
+      res.status(500).json({ error: "Failed to process order. Please try again later." }); 
   }
 });
 
