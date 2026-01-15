@@ -30,19 +30,26 @@ export function startBot() {
 
   bot.onText(/\/settings/, async msg => {
     if (!isAdmin(msg.from.id)) return; 
-    const settings = await getSettings();
-    bot.sendMessage(msg.chat.id, `📊 *Current Settings*\nMMK→THB Rate: ${settings.mmk_to_thb_rate}\nTHB→MMK Rate: ${settings.thb_to_mmk_rate}\nDiscount: ${settings.discount_percentage}%`, { parse_mode: "Markdown" });
+    const rates = await exchangeService.getRates();
+    bot.sendMessage(msg.chat.id, `📊 *Current Settings*\nMMK→THB Rate: ${rates.mmk_to_thb}\nTHB→MMK Rate: ${rates.thb_to_mmk}`, { parse_mode: "Markdown" });
   });
 
-  bot.onText(/\/update (.+) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/, (msg, match) => {
+  bot.onText(/\/update (MMK-THB|THB-MMK) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/, async (msg, match) => {
     if (!isAdmin(msg.from.id)) return;
-    const [currency, buy, sell] = [match[1], match[2], match[3]];
-    const success = exchangeService.updateRate(currency, buy, sell);
+    const [currency, rate1, rate2] = [match[1], parseFloat(match[2]), parseFloat(match[3])];
     
-    if (success) {
-        bot.sendMessage(msg.chat.id, `✅ Rates for ${currency} updated.\nBuy: ${buy}\nSell: ${sell}`);
-    } else {
-        bot.sendMessage(msg.chat.id, `❌ Failed to update rates.`);
+    try {
+        let ratesToUpdate;
+        if (currency === 'MMK-THB') {
+            ratesToUpdate = { mmk_to_thb: rate1, thb_to_mmk: rate2 };
+        } else { // THB-MMK
+            ratesToUpdate = { thb_to_mmk: rate1, mmk_to_thb: rate2 };
+        }
+        await exchangeService.setRates(ratesToUpdate);
+        bot.sendMessage(msg.chat.id, `✅ Rates updated successfully.`);
+    } catch (error) {
+        console.error("Error updating rates:", error);
+        bot.sendMessage(msg.chat.id, `❌ Failed to update rates. Error: ${error.message}`);
     }
   });
 

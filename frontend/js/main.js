@@ -11,9 +11,9 @@ const state = {
         effective_thb_mmk: 0,
         expired: false,
         config: {},
+        currentDirection: "MMK2THB",
     },
     ui: {
-        currentDirection: "MMK2THB",
         isCalculating: false,
         userIsActive: false,
         activeTimeout: null,
@@ -84,7 +84,10 @@ const loadRates = async (isAutoRefresh = false) => {
 
     const data = await apiService.fetchRates();
     if (data) {
-        state.rates = data;
+        state.rates = {
+            ...state.rates,
+            ...data
+        };
         if (state.rates.expired) {
             handleExpiredRates();
             return;
@@ -116,7 +119,7 @@ const updateRatesUI = () => {
     els.receiveInput.disabled = false;
     els.adjustmentBadge.classList.remove("text-red-500");
     
-    if (!state.rates.config) {
+    if (!state.rates.config || Object.keys(state.rates.config).length === 0) {
         state.rates.config = {
             base_profit_percent: 0.2,
             low_margin_percent: 0.2,
