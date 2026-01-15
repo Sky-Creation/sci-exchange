@@ -39,9 +39,19 @@ const formatNumber = (val) => {
 
 const apiService = {
     fetchInitialRates: async () => {
-        const response = await fetch(`${API_URL}/rates?t=${new Date().getTime()}`, { cache: "no-store" });
-        if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
-        return await response.json();
+        const url = `${API_URL}/rates?t=${new Date().getTime()}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        try {
+            const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
+            return await response.json();
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') throw new Error('Request timed out');
+            throw error;
+        }
     },
     calculate: async (direction, amount) => {
         const response = await fetch(`${API_URL}/calculate`, {
