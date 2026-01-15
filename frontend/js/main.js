@@ -122,7 +122,7 @@ const loadInitialRates = async (isAutoRefresh = false) => {
             setUIState('active');
             // Start auto-refresh only after the first successful load
             if (!state.ui.refreshInterval) {
-                state.ui.refreshInterval = setInterval(() => loadInitialRates(true), 30000);
+                state.ui.refreshInterval = setInterval(() => loadInitialRates(true), 10000);
             }
         }
     } catch (error) {

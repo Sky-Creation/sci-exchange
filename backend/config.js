@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const PORT = process.env.PORT || 3000;
-export const RATE_EXPIRY_MINUTES = process.env.RATE_EXPIRY_MINUTES ? parseInt(process.env.RATE_EXPIRY_MINUTES) : 360; 
+export const RATE_EXPIRY_MINUTES = process.env.RATE_EXPIRY_MINUTES ? parseInt(process.env.RATE_EXPIRY_MINUTES) : 1440; // 24 hours
 
 // Absolute paths
 export const RATE_FILE = path.join(__dirname, "data/rates.json");

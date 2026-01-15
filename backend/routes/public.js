@@ -21,6 +21,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 router.get("/rates", async (req, res) => { // CORRECT: Make the handler async
   try {
     const rates = await exchangeService.getRates(); // CORRECT: Await the async function
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.json(rates);
   } catch (err) { 
     console.error("GET /rates Error:", err);
