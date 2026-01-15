@@ -32,7 +32,8 @@ class ExchangeService {
             }
 
             const rates = { expired: true };
-            const lastUpdated = new Date(rateRows[0].updatedAt);
+            const timestamps = rateRows.map(r => new Date(r.updatedAt).getTime());
+            const lastUpdated = new Date(Math.max(...timestamps));
             const now = new Date();
             const minutesDiff = (now.getTime() - lastUpdated.getTime()) / 60000;
             
