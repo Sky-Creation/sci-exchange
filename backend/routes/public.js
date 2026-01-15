@@ -6,6 +6,7 @@ import { createOrder } from "../services/order.service.js";
 import { notifyNewOrder } from "../bot/telegram.js";
 import { validateOrder } from "../middleware/validation.js";
 import slipService from "../services/slip.service.js"; 
+import rateService from "../services/rate.service.js";
 
 const router = express.Router();
 
@@ -24,6 +25,16 @@ router.get("/rates", (req, res) => {
     if (!rates) throw new Error("Rates service returned null");
     res.json(rates);
   } catch (err) { console.error("GET /rates Error:", err); res.status(500).json({ error: "Service Unavailable" }); }
+});
+
+router.post("/calculate", async (req, res, next) => {
+    try {
+        const { direction, amount } = req.body;
+        const result = await rateService.calculate(direction, parseFloat(amount));
+        res.json(result);
+    } catch (err) {
+        next(err);
+    }
 });
 
 router.post("/orders", upload.single("slip"), validateOrder, async (req, res) => {

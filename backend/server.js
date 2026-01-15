@@ -27,31 +27,35 @@ if (process.env.NODE_ENV !== 'production') {
     allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5500");
 }
 
+// Core Middleware
 app.use(cors({
     origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
-
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Routes
+// API Routes - These must come before serving the frontend
 app.use("/auth", authRoutes);
 app.use("/admin", adminAuth, adminRoutes);
 app.use("/api", publicRoutes);
 
+// Serve Frontend Static Files
+const frontendPath = path.join(__dirname, "../frontend");
+app.use(express.static(frontendPath));
+
+// SPA Catch-All Route - This must come after API routes and static files
 app.get("*", (req, res) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/admin")) {
-        return res.status(404).json({ error: "Endpoint not found" });
-    }
-    res.send("SCI Exchange Backend is Running. Visit the frontend to use the app.");
+    // Any request that is not an API call and not a static file will serve the index.html
+    res.sendFile(path.join(frontendPath, "index.html"));
 });
 
 // Centralized Error Handler
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
+    console.error("Central Error Handler:", err);
+    if (!res.headersSent) {
+        res.status(err.status || 500).json({ error: err.message || 'Something broke!' });
+    }
 });
 
 app.listen(PORT, () => {
@@ -71,5 +75,6 @@ app.listen(PORT, () => {
       }
   }, 24 * 60 * 60 * 1000);
   
+  // Run once on startup
   archiveOldOrders();
 });
