@@ -60,9 +60,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  if (process.env.NODE_ENV === 'production') {
-      startBot();
-  }
+  startBot();
 
   // Schedule Archiving Task (Every 24 hours)
   setInterval(async () => {

@@ -29,6 +29,19 @@ const dbGet = (db, sql, params) =>
         });
     });
 
+/**
+ * Rounds amounts to appropriate precision for currency display
+ * @param {number} val - The amount to round
+ * @param {string} currency - The currency type ('MMK' or 'THB')
+ * @returns {number} - The rounded amount
+ */
+const roundSpecial = (val, currency) => {
+    if (currency === 'MMK') {
+        return Math.round(val / 50) * 50;
+    }
+    return Math.round(val);
+};
+
 
 const generateReference = async (direction) => {
     const db = await getDB();
@@ -88,7 +101,7 @@ export const createOrder = async (orderData) => {
         created: new Date().toISOString(),
         direction: orderData.direction,
         amount: parseFloat(amount.toFixed(2)),
-        receiveAmount: parseFloat(receiveAmount.toFixed(2)),
+        receiveAmount: roundSpecial(receiveAmount, orderData.direction === 'MMK2THB' ? 'THB' : 'MMK'),
         rateUsed: parseFloat(finalRate.toFixed(5)),
         txid: orderData.txid || "",
         slipUrl: orderData.slipUrl || "",
