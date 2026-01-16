@@ -36,9 +36,15 @@ export function startBot() {
     bot.sendMessage(msg.chat.id, `📊 *Current Settings*\nMMK→THB Rate: ${rates.mmk_to_thb}\nTHB→MMK Rate: ${rates.thb_to_mmk}`, { parse_mode: "Markdown" });
   });
 
-  bot.onText(/\/update (MMK-THB|THB-MMK) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/, async (msg, match) => {
-    if (!isAdmin(msg.from.id)) return;
+  bot.onText(/\/update\s+(MMK-THB|THB-MMK)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)/i, async (msg, match) => {
+    console.log("📥 /update command received from:", msg.from.id);
+    console.log("Admin check:", isAdmin(msg.from.id));
+    if (!isAdmin(msg.from.id)) {
+      console.log("❌ User not admin");
+      return;
+    }
     const [currency, rate1, rate2] = [match[1], parseFloat(match[2]), parseFloat(match[3])];
+    console.log("Parsed:", { currency, rate1, rate2 });
     
     try {
         let ratesToUpdate;
@@ -47,11 +53,18 @@ export function startBot() {
         } else { // THB-MMK
             ratesToUpdate = { thb_to_mmk: rate1, mmk_to_thb: rate2 };
         }
+        console.log("Updating rates:", ratesToUpdate);
         await exchangeService.setRates(ratesToUpdate);
-        bot.sendMessage(msg.chat.id, `✅ Rates updated successfully.`);
+        console.log("Rates updated successfully, sending confirmation");
+        await bot.sendMessage(msg.chat.id, `✅ Rates updated successfully.`);
+        console.log("Confirmation sent");
     } catch (error) {
         console.error("Error updating rates:", error);
-        bot.sendMessage(msg.chat.id, `❌ Failed to update rates. Error: ${error.message}`);
+        try {
+            await bot.sendMessage(msg.chat.id, `❌ Failed to update rates. Error: ${error.message}`);
+        } catch (sendError) {
+            console.error("Error sending error message:", sendError);
+        }
     }
   });
 
