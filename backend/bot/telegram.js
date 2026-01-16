@@ -11,6 +11,8 @@ function isAdmin(id) {
 }
 
 export function startBot() {
+  console.log("🔄 Attempting to start Telegram bot...");
+  console.log("TELEGRAM_TOKEN exists:", !!TELEGRAM_TOKEN);
   if (!TELEGRAM_TOKEN) { 
       console.log("⚠️ Telegram Token not provided."); 
       return; 

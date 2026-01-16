@@ -7,6 +7,10 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+console.log("🔧 Loading config...");
+console.log("TELEGRAM_BOT_TOKEN exists:", !!process.env.TELEGRAM_BOT_TOKEN);
+console.log("TG_ADMIN_IDS:", process.env.TG_ADMIN_IDS);
+
 export const PORT = process.env.PORT || 3000;
 export const RATE_EXPIRY_MINUTES = process.env.RATE_EXPIRY_MINUTES ? parseInt(process.env.RATE_EXPIRY_MINUTES) : 1440; // 24 hours
 
