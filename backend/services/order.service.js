@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getDB } from "../utils/database.js";
 import { logAudit } from "./audit.service.js";
 import exchangeService from "./exchange.service.js";
+import { getSettings } from "./settings.service.js";
 
 // Promisified helpers for the sqlite3 library
 const dbRun = (db, sql, params) => 
@@ -54,6 +55,7 @@ const generateReference = async (direction) => {
 export const createOrder = async (orderData) => {
     const db = await getDB();
     const rates = await exchangeService.getRates(); // Must await this async call
+    const settings = await getSettings();
 
     if (rates.expired) {
         throw new Error("Cannot create order, rates have expired.");
@@ -69,7 +71,7 @@ export const createOrder = async (orderData) => {
 
     const reference = await generateReference(orderData.direction);
     const amount = Number(orderData.amount);
-    const baseProfit = (rates.profit || 0) / 100; // Assuming profit comes from rates
+    const baseProfit = (settings.base_profit_percent || 0) / 100;
     let finalRate = 0, receiveAmount = 0;
 
     if (orderData.direction === "MMK2THB") {

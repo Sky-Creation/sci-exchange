@@ -24,6 +24,13 @@ const defaultSettings = {
     discount_enabled: false,
     discount_percentage: 0,
     backup_retention_days: 7,
+    base_profit_percent: 0,
+    threshold_low_mmk: 100000,
+    low_margin_percent: 0,
+    threshold_high_mmk: 1000000,
+    high_discount_percent: 0,
+    threshold_low_thb: 1000,
+    threshold_high_thb: 10000,
 };
 
 export const getSettings = async () => {
